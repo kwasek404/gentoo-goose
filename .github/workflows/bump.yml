@@ -1,0 +1,59 @@
+name: bump
+
+on:
+  schedule:
+    - cron: "37 6 * * *"
+  workflow_dispatch:
+    inputs:
+      target_tag:
+        description: "Upstream tag to bump to (default: latest stable release)"
+        required: false
+        default: ""
+      dry_run:
+        description: "Stage changes only, do not commit or push"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bump
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache distfiles
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: distfiles
+          key: goose-distfiles-${{ hashFiles('dev-util/goose/*.ebuild') }}
+          restore-keys: goose-distfiles-
+
+      - name: Build toolchain image
+        run: docker build -t goose-bump:ci .
+
+      - name: Bump goose ebuild
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_TAG: ${{ inputs.target_tag }}
+          DRY_RUN: ${{ (github.event_name == 'schedule') && '0' || (inputs.dry_run && '1' || '0') }}
+        run: |
+          mkdir -p distfiles
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/repo" -w /repo \
+            -v "${GITHUB_WORKSPACE}/distfiles:/distfiles" \
+            -e DISTDIR=/distfiles \
+            -e HOME=/tmp \
+            -e GITHUB_ACTIONS=1 \
+            -e TARGET_TAG -e DRY_RUN -e GH_TOKEN \
+            -u "$(id -u):$(id -g)" \
+            goose-bump:ci bash -c 'git config --global --add safe.directory /repo && exec bash scripts/bump.sh'

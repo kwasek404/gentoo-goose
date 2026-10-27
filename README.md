@@ -21,7 +21,23 @@ The ebuild uses `cargo.eclass` (`CRATES` + `GIT_CRATES`); dependencies are fetch
 
 ## Maintenance
 
-The ebuild and fat Manifest are regenerated per upstream version with `pycargoebuild` (CRATES) and `pkgdev manifest` (digests). Automatic version detection + bump (CI) is planned.
+The ebuild and fat Manifest are regenerated automatically by
+`.github/workflows/bump.yml`: a daily cron (plus manual `workflow_dispatch`,
+which defaults to a dry run) detects the newest upstream goose release and, if
+it is not already packaged, regenerates the version-specific `CRATES` /
+`GIT_CRATES` / crate `LICENSE+=` blocks with `pycargoebuild`, rebuilds the fat
+Manifest, and commits + pushes to `main`. CI regenerates and publishes only -
+it never compiles or emerges the package; the consumer builds via `emerge`.
+
+- `scripts/bump.sh` - entry point. Also runs locally:
+  `DRY_RUN=1 DISTDIR=/var/cache/distfiles bash scripts/bump.sh`
+- `scripts/gen-manifest.py` - fat Manifest generator (crates.io + source +
+  github `GIT_CRATES` archive tarball). Reproduces `pkgdev manifest` output
+  byte-for-byte, so CI needs no portage/pkgcore.
+- `scripts/license-mapping.conf` - pinned copy of Gentoo's license mapping for
+  `pycargoebuild` (refresh from `metadata/license-mapping.conf` in the Gentoo
+  tree if a bump reports an unmapped crate license).
+- `Dockerfile` - pinned toolchain image used by the workflow.
 
 ## License note
 
