@@ -1160,7 +1160,7 @@ SRC_URI="
 "
 
 src_prepare() {
-	cargo_src_prepare
+	default
 	local forge="${WORKDIR}/cudaforge-e7c1967340e40673db98dc9e17da0f04834a456f"
 	sed -i -E \
 		-e "s|^(cudaforge) = \{ git = .*\}$|\1 = { path = \"${forge}\" }|" \
