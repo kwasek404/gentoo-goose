@@ -1144,28 +1144,44 @@ CRATES="
 "
 
 declare -A GIT_CRATES=(
-	[cudaforge]="https://github.com/jbg/cudaforge;e7c1967340e40673db98dc9e17da0f04834a456f"
+	[cudaforge]='https://github.com/jbg/cudaforge;e7c1967340e40673db98dc9e17da0f04834a456f;cudaforge-%commit%'
 )
 
 inherit cargo
 
 DESCRIPTION="Local, extensible AI agent that executes, edits and tests code, with MCP support"
 HOMEPAGE="https://github.com/aaif-goose/goose"
-LICENSE="Apache-2.0 BSD BSD-2 BZIP2 Boost-1.0 CDLA-Permissive-2.0 ISC LGPL-3+ MIT MIT-0 MPL-2.0 Unicode-3.0 Unlicense ZLIB"
+LICENSE="Apache-2.0"
+# Dependent crate licenses
+LICENSE+="
+	Apache-2.0 BSD-2 BSD Boost-1.0 CDLA-Permissive-2.0 ISC LGPL-3+ MIT
+	MIT-0 MPL-2.0 Unicode-3.0 Unlicense ZLIB BZIP2
+"
 SLOT="0"
 KEYWORDS="~amd64"
 SRC_URI="
-	https://github.com/aaif-goose/goose/archive/v1.56.0.tar.gz -> ${P}.tar.gz
+	https://github.com/aaif-goose/goose/archive/v${PV}.tar.gz -> ${P}.tar.gz
 	${CARGO_CRATE_URIS}
 "
 
 src_prepare() {
 	default
-	local forge="${WORKDIR}/cudaforge-e7c1967340e40673db98dc9e17da0f04834a456f"
-	sed -i -E \
-		-e "s|^(cudaforge) = \{ git = .*\}$|\1 = { path = \"${forge}\" }|" \
-		Cargo.toml || die "failed to rewrite upstream [patch.crates-io]"
-	grep -qF 'cudaforge = { path = ' Cargo.toml || die "cudaforge git entry not rewritten"
+	# Upstream redirects the cudaforge crate to a git revision via
+	# [patch.crates-io]. Cargo builds offline (--frozen), so point that
+	# redirect at the checkout cargo.eclass unpacked from GIT_CRATES.
+	# Derived from GIT_CRATES so no per-version edit is needed.
+	local crate rest commit
+	local -a git_crates=()
+	if declare -p GIT_CRATES &>/dev/null; then
+		git_crates=( "${!GIT_CRATES[@]}" )
+	fi
+	for crate in "${git_crates[@]}"; do
+		IFS=';' read -r rest commit _ _ <<< "${GIT_CRATES[${crate}]}"
+		sed -i -E \
+			-e "s|^${crate} = \{ git = .*\}$|${crate} = { path = \"${WORKDIR}/${crate}-${commit}\" }|" \
+			Cargo.toml || die "failed to rewrite [patch.crates-io] ${crate} in Cargo.toml"
+		grep -qF "${crate} = { path = " Cargo.toml || die "${crate} [patch.crates-io] entry not rewritten"
+	done
 }
 
 src_configure() {
