@@ -1175,3 +1175,11 @@ src_configure() {
 	)
 	cargo_src_configure --no-default-features --bin goose
 }
+
+src_install() {
+	# Workspace root is a virtual manifest (no [package]); cargo install needs
+	# the member that declares [[bin]] name = "goose". --bin goose is already
+	# threaded from src_configure via ECARGO_ARGS, so it is not repeated here.
+	cargo_src_install --path crates/goose-cli
+	einstalldocs
+}
