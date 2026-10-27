@@ -1159,6 +1159,15 @@ SRC_URI="
 	${CARGO_CRATE_URIS}
 "
 
+src_prepare() {
+	cargo_src_prepare
+	local forge="${WORKDIR}/cudaforge-e7c1967340e40673db98dc9e17da0f04834a456f"
+	sed -i -E \
+		-e "s|^(cudaforge) = \{ git = .*\}$|\1 = { path = \"${forge}\" }|" \
+		Cargo.toml || die "failed to rewrite upstream [patch.crates-io]"
+	grep -qF 'cudaforge = { path = ' Cargo.toml || die "cudaforge git entry not rewritten"
+}
+
 src_configure() {
 	local myfeatures=(
 		code-mode
