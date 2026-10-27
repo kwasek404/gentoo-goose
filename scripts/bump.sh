@@ -43,11 +43,11 @@ local_latest="$(ls "${PKG_DIR}"/goose-*.ebuild 2>/dev/null |
 	sed -E 's|.*/goose-(.*)\.ebuild$|\1|' | sort -V | tail -n1)"
 [[ -n ${local_latest} ]] || { echo "no existing goose ebuild to seed from" >&2; exit 1; }
 
-if [[ ${pv} == "${local_latest}" ]]; then
+if [[ ${pv} == "${local_latest}" && ${FORCE:-0} != 1 ]]; then
 	echo "up to date: goose-${pv} ebuild already present"
 	exit 0
 fi
-if [[ -e "${PKG_DIR}/goose-${pv}.ebuild" ]]; then
+if [[ -e "${PKG_DIR}/goose-${pv}.ebuild" && ${FORCE:-0} != 1 ]]; then
 	echo "goose-${pv}.ebuild already present"
 	exit 0
 fi
@@ -79,7 +79,9 @@ srcdir="${work}/goose-${pv}"
 #    pycargoebuild fetches the crates into DISTDIR itself.
 prev_ebuild="${PKG_DIR}/goose-${local_latest}.ebuild"
 new_ebuild="${PKG_DIR}/goose-${pv}.ebuild"
-cp "${prev_ebuild}" "${new_ebuild}"
+if [[ ${prev_ebuild} != "${new_ebuild}" ]]; then
+	cp "${prev_ebuild}" "${new_ebuild}"
+fi
 pycargoebuild -C -i "${new_ebuild}" \
 	-d "${DISTDIR}" \
 	-l "${LICENSE_MAPPING}" \

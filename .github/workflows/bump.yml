@@ -13,6 +13,10 @@ on:
         description: "Stage changes only, do not commit or push"
         type: boolean
         default: true
+      force:
+        description: "Force regeneration even if the upstream version is unchanged"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -46,6 +50,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TARGET_TAG: ${{ inputs.target_tag }}
           DRY_RUN: ${{ (github.event_name == 'schedule') && '0' || (inputs.dry_run && '1' || '0') }}
+          FORCE: ${{ inputs.force && '1' || '0' }}
         run: |
           mkdir -p distfiles
           docker run --rm \
@@ -54,6 +59,6 @@ jobs:
             -e DISTDIR=/distfiles \
             -e HOME=/tmp \
             -e GITHUB_ACTIONS=1 \
-            -e TARGET_TAG -e DRY_RUN -e GH_TOKEN \
+            -e TARGET_TAG -e DRY_RUN -e FORCE -e GH_TOKEN \
             -u "$(id -u):$(id -g)" \
             goose-bump:ci bash -c 'git config --global --add safe.directory /repo && exec bash scripts/bump.sh'
