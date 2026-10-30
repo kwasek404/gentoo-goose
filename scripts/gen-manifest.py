@@ -73,11 +73,28 @@ def git_crate_distfile(url, commit):
 
 
 def parse_src_uri(text, var):
-    m = re.search(r'^SRC_URI="(.*?)"\s*$', text, re.M | re.S)
-    if not m:
+    # The SRC_URI block spans lines; the closing quote sits alone on a line.
+    # Scan for that line rather than matching to the first quote: SRC_URI may
+    # embed $(use ... && SRC_URI+="...") conditionals that contain quotes of
+    # their own, which would truncate a naive regex.
+    lines = text.splitlines()
+    start = None
+    for i, line in enumerate(lines):
+        if line.startswith('SRC_URI="'):
+            start = i
+            break
+    if start is None:
         sys.exit("no SRC_URI=... block found")
+    end = None
+    for j in range(start + 1, len(lines)):
+        if lines[j].rstrip() == '"':
+            end = j
+            break
+    if end is None:
+        sys.exit("unterminated SRC_URI block")
+    block = "\n".join(lines[start + 1:end])
     files = OrderedDict()
-    for url, rename in re.findall(r"(\S+)\s*->\s*(\S+)", m.group(1)):
+    for url, rename in re.findall(r"(\S+)\s*->\s*(\S+)", block):
         files[expand_vars(rename, var)] = expand_vars(url, var)
     return files
 

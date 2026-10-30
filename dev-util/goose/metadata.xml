@@ -4,4 +4,7 @@
 	<upstream>
 		<remote-id type="github">aaif-goose/goose</remote-id>
 	</upstream>
+	<use>
+		<flag name="gui">Install the Electron-based desktop app, repacked from the official prebuilt release artifact (amd64 only)</flag>
+	</use>
 </pkgmetadata>

@@ -1134,11 +1134,65 @@ LICENSE+="
 	Apache-2.0 BSD-2 BSD Boost-1.0 CDLA-Permissive-2.0 ISC LGPL-3+ MIT
 	MIT-0 MPL-2.0 Unicode-3.0 Unlicense ZLIB BZIP2
 "
+# Chromium/Electron core in the prebuilt desktop bundle (gui USE)
+LICENSE+=" BSD-3"
 SLOT="0"
 KEYWORDS="~amd64"
+# gui: install the Electron-based desktop app, repacked from the official
+# prebuilt release artifact (see desktop_install()). Off by default.
+IUSE="gui"
+BDEPEND="
+	app-arch/7zip
+"
+RDEPEND="
+	$(use gui && RDEPEND+="
+		app-accessibility/at-spi2-core
+		dev-libs/atk
+		dev-libs/expat
+		dev-libs/glib
+		dev-libs/libffi
+		dev-libs/libpcre2
+		dev-libs/nspr
+		dev-libs/nss
+		media-libs/alsa-lib
+		media-libs/fontconfig
+		media-libs/freetype
+		media-libs/harfbuzz
+		media-libs/libpng
+		media-libs/mesa
+		net-libs/gnutls
+		net-print/cups
+		sys-apps/dbus
+		sys-apps/systemd
+		sys-apps/util-linux
+		sys-libs/glibc
+		sys-libs/zlib
+		x11-libs/cairo
+		x11-libs/gtk+:3
+		x11-libs/libX11
+		x11-libs/libXcomposite
+		x11-libs/libXdamage
+		x11-libs/libXext
+		x11-libs/libXfixes
+		x11-libs/libXrandr
+		x11-libs/libXrender
+		x11-libs/libxcb
+		x11-libs/libdrm
+		x11-libs/libnotify
+		x11-libs/libxkbcommon
+		x11-libs/pango
+		x11-libs/pixman
+		x11-misc/xdg-utils
+	")
+"
 SRC_URI="
 	https://github.com/aaif-goose/goose/archive/v${PV}.tar.gz -> ${P}.tar.gz
 	${CARGO_CRATE_URIS}
+	$(use gui && SRC_URI+="
+		# Official prebuilt desktop bundle (Electron runtime + bundled goose
+		# CLI), published with every upstream release. amd64 only.
+		https://github.com/aaif-goose/goose/releases/download/v${PV}/goose_${PV}_amd64.deb -> ${P}-desktop-amd64.deb
+	")
 "
 
 src_prepare() {
@@ -1175,4 +1229,47 @@ src_install() {
 	# threaded from src_configure via ECARGO_ARGS, so it is not repeated here.
 	cargo_src_install --path crates/goose-cli
 	einstalldocs
+
+	use gui && desktop_install
+}
+
+# The desktop app (gui USE) is the upstream prebuilt Electron bundle, not a
+# cargo artifact: it lives in ui/desktop (Electron Forge + Vite + React),
+# outside the cargo workspace, and needs a node/pnpm toolchain plus the
+# Electron runtime, none of which belong in this ebuild. Upstream builds,
+# e2e-tests and publishes the bundle as a .deb with every release, so we
+# repack that official artifact (see README.md "GUI (desktop app)").
+#
+# The bundle is self-contained: it carries its own Electron runtime and a
+# copy of the goose CLI (resources/bin/goose, same release), so it does not
+# use the source-built CLI installed by this ebuild.
+#
+# Self-update is disabled on purpose: the in-app updater (ui/desktop/src/
+# utils/githubUpdater.ts) would replace the install directory with a GitHub
+# download, bypassing Portage. It refuses to run when the install root holds
+# a file outside its Electron runtime whitelist, so we drop a marker file
+# (PORTAGE_MANAGED) there to trip that check.
+desktop_install() {
+	local root
+	# Unpack the .deb (ar container) and its data member (zstd tarball).
+	7z x -y -o"${S}/.desktop" "${DISTDIR}/${P}-desktop-amd64.deb" >/dev/null \
+		|| die "failed to unpack ${P}-desktop-amd64.deb"
+	7z x -y -o"${S}/.desktop" "${S}/.desktop/data.tar.zst" >/dev/null \
+		|| die "failed to unpack the desktop data tarball"
+	root="${S}/.desktop/usr"
+
+	# Ship the uppercase (product-named) variant; the .deb carries a lowercase
+	# duplicate that we do not install.
+	dodir /usr/lib/Goose
+	cp -a "${root}/lib/Goose/." "${ED%/}usr/lib/Goose/" || die "failed to install the desktop bundle"
+	printf '%s\n' \
+		"Managed by Portage: the in-app GitHub self-updater is disabled on purpose." \
+		"Update via emerge (the gentoo-update flow), not the app." \
+		> "${ED%/}usr/lib/Goose/PORTAGE_MANAGED"
+	dosym /usr/lib/Goose/Goose /usr/bin/Goose
+	insinto usr/share/pixmaps
+	doins "${root}/share/pixmaps/Goose.png"
+	dodesktop "${root}/share/applications/Goose.desktop"
+	insinto usr/share/doc/Goose
+	doins "${root}/share/doc/Goose/copyright"
 }
