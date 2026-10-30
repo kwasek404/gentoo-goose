@@ -1142,10 +1142,12 @@ KEYWORDS="~amd64"
 # prebuilt release artifact (see desktop_install()). Off by default.
 IUSE="gui"
 BDEPEND="
-	app-arch/7zip
+	gui? ( app-arch/7zip )
 "
+# gui runtime deps: the shared libraries the Electron binary of the
+# prebuilt desktop bundle links against (see desktop_install()).
 RDEPEND="
-	$(use gui && RDEPEND+="
+	gui? (
 		app-accessibility/at-spi2-core
 		dev-libs/atk
 		dev-libs/expat
@@ -1183,16 +1185,16 @@ RDEPEND="
 		x11-libs/pango
 		x11-libs/pixman
 		x11-misc/xdg-utils
-	")
+	)
 "
+# Official prebuilt desktop bundle (Electron runtime + bundled goose
+# CLI), published with every upstream release. amd64 only.
 SRC_URI="
 	https://github.com/aaif-goose/goose/archive/v${PV}.tar.gz -> ${P}.tar.gz
 	${CARGO_CRATE_URIS}
-	$(use gui && SRC_URI+="
-		# Official prebuilt desktop bundle (Electron runtime + bundled goose
-		# CLI), published with every upstream release. amd64 only.
+	gui? (
 		https://github.com/aaif-goose/goose/releases/download/v${PV}/goose_${PV}_amd64.deb -> ${P}-desktop-amd64.deb
-	")
+	)
 "
 
 src_prepare() {

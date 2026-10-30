@@ -74,9 +74,9 @@ def git_crate_distfile(url, commit):
 
 def parse_src_uri(text, var):
     # The SRC_URI block spans lines; the closing quote sits alone on a line.
-    # Scan for that line rather than matching to the first quote: SRC_URI may
-    # embed $(use ... && SRC_URI+="...") conditionals that contain quotes of
-    # their own, which would truncate a naive regex.
+    # Scan for that line rather than matching to the first quote. Conditional
+    # entries use the gui? ( ... ) dep-string form, so the only URL lines are
+    # the plain "url -> name" pairs (the gui? / ) lines carry no ->).
     lines = text.splitlines()
     start = None
     for i, line in enumerate(lines):
