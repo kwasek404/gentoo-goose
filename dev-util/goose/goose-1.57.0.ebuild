@@ -1285,10 +1285,15 @@ desktop_install() {
 	printf '%s\n' \
 		"Managed by Portage: the in-app GitHub self-updater is disabled on purpose." \
 		"Update via emerge (the gentoo-update flow), not the app." \
-		> "${ED%/}/usr/lib/goose/PORTAGE_MANAGED"
+		> "${ED%/}/usr/lib/goose/PORTAGE_MANAGED" || die "failed to write the PORTAGE_MANAGED marker"
+	# No dodesktop() in this portage (the do* installers are the external
+	# ebuild-helpers; dodesktop was never ported there) - install the menu
+	# entry with plain insinto/doins. The file itself passes
+	# desktop-file-validate.
+	insinto usr/share/applications
+	doins "${root}/share/applications/goose.desktop"
 	insinto usr/share/pixmaps
 	doins "${root}/share/pixmaps/goose.png"
-	dodesktop "${root}/share/applications/goose.desktop"
 	insinto usr/share/doc/goose
 	doins "${root}/share/doc/goose/copyright"
 }
