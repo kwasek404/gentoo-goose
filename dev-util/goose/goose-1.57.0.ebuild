@@ -1138,6 +1138,11 @@ LICENSE+="
 LICENSE+=" BSD-3"
 SLOT="0"
 KEYWORDS="~amd64"
+# Every distfile (source tarball, ~1135 crates, the desktop .deb) is
+# GitHub/crates.io-only, not on the Gentoo mirrors. Without primaryuri,
+# portage tries all GENTOO_MIRRORS entries for every one of them before
+# falling back to the explicit SRC_URI URLs (thousands of 404s).
+RESTRICT="primaryuri"
 # gui: install the Electron-based desktop app, repacked from the official
 # prebuilt release artifact (see desktop_install()). Off by default.
 IUSE="gui"
