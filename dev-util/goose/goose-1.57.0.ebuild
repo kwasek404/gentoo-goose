@@ -1154,6 +1154,7 @@ BDEPEND="
 RDEPEND="
 	gui? (
 		app-accessibility/at-spi2-core
+		app-arch/bzip2
 		dev-libs/atk
 		dev-libs/expat
 		dev-libs/glib
@@ -1174,7 +1175,6 @@ RDEPEND="
 		sys-apps/dbus
 		sys-apps/systemd
 		sys-apps/util-linux
-		sys-libs/bzip2
 		sys-libs/glibc
 		sys-libs/zlib
 		x11-libs/cairo
