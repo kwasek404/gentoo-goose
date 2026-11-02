@@ -1161,10 +1161,12 @@ RDEPEND="
 		dev-libs/libpcre2
 		dev-libs/nspr
 		dev-libs/nss
+		dev-libs/wayland
 		media-libs/alsa-lib
 		media-libs/fontconfig
 		media-libs/freetype
 		media-libs/harfbuzz
+		media-libs/libjpeg-turbo
 		media-libs/libpng
 		media-libs/mesa
 		net-libs/gnutls
@@ -1172,6 +1174,7 @@ RDEPEND="
 		sys-apps/dbus
 		sys-apps/systemd
 		sys-apps/util-linux
+		sys-libs/bzip2
 		sys-libs/glibc
 		sys-libs/zlib
 		x11-libs/cairo
