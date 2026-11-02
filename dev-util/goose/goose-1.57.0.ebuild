@@ -1277,12 +1277,15 @@ desktop_install() {
 	# cargo_src_install just placed at /usr/bin/goose. The .desktop entry
 	# points at /usr/lib/goose/Goose directly, so the menu shortcut keeps
 	# working without it.
+	# Note: ${ED%/}/ is the canonical idiom (same as portage's own doins/
+	# dosym helpers) - it normalizes whether or not ED carries a trailing
+	# slash.
 	dodir /usr/lib/goose
-	cp -a "${root}/lib/goose/." "${ED}usr/lib/goose/" || die "failed to install the desktop bundle"
+	cp -a "${root}/lib/goose/." "${ED%/}/usr/lib/goose/" || die "failed to install the desktop bundle"
 	printf '%s\n' \
 		"Managed by Portage: the in-app GitHub self-updater is disabled on purpose." \
 		"Update via emerge (the gentoo-update flow), not the app." \
-		> "${ED}usr/lib/goose/PORTAGE_MANAGED"
+		> "${ED%/}/usr/lib/goose/PORTAGE_MANAGED"
 	insinto usr/share/pixmaps
 	doins "${root}/share/pixmaps/goose.png"
 	dodesktop "${root}/share/applications/goose.desktop"
