@@ -1258,25 +1258,31 @@ src_install() {
 # (PORTAGE_MANAGED) there to trip that check.
 desktop_install() {
 	local root
-	# Unpack the .deb (ar container) and its data member (zstd tarball).
+	# Unpack the .deb (ar container). 7z auto-decompresses the data member
+	# to a plain data.tar (the zstd layer is stripped), so there is no
+	# data.tar.zst to unpack a second time.
 	7z x -y -o"${S}/.desktop" "${DISTDIR}/${P}-desktop-amd64.deb" >/dev/null \
 		|| die "failed to unpack ${P}-desktop-amd64.deb"
-	7z x -y -o"${S}/.desktop" "${S}/.desktop/data.tar.zst" >/dev/null \
+	tar -xf "${S}/.desktop/data.tar" -C "${S}/.desktop" \
 		|| die "failed to unpack the desktop data tarball"
 	root="${S}/.desktop/usr"
 
-	# Ship the uppercase (product-named) variant; the .deb carries a lowercase
-	# duplicate that we do not install.
-	dodir /usr/lib/Goose
-	cp -a "${root}/lib/Goose/." "${ED%/}usr/lib/Goose/" || die "failed to install the desktop bundle"
+	# The bundle lives at /usr/lib/goose (lowercase directory, binary
+	# Goose inside) per the upstream .deb. The .deb also ships
+	# /usr/bin/goose -> ../lib/goose/Goose, but we do not install that
+	# symlink: it would clobber the source-built CLI that
+	# cargo_src_install just placed at /usr/bin/goose. The .desktop entry
+	# points at /usr/lib/goose/Goose directly, so the menu shortcut keeps
+	# working without it.
+	dodir /usr/lib/goose
+	cp -a "${root}/lib/goose/." "${ED}usr/lib/goose/" || die "failed to install the desktop bundle"
 	printf '%s\n' \
 		"Managed by Portage: the in-app GitHub self-updater is disabled on purpose." \
 		"Update via emerge (the gentoo-update flow), not the app." \
-		> "${ED%/}usr/lib/Goose/PORTAGE_MANAGED"
-	dosym /usr/lib/Goose/Goose /usr/bin/Goose
+		> "${ED}usr/lib/goose/PORTAGE_MANAGED"
 	insinto usr/share/pixmaps
-	doins "${root}/share/pixmaps/Goose.png"
-	dodesktop "${root}/share/applications/Goose.desktop"
-	insinto usr/share/doc/Goose
-	doins "${root}/share/doc/Goose/copyright"
+	doins "${root}/share/pixmaps/goose.png"
+	dodesktop "${root}/share/applications/goose.desktop"
+	insinto usr/share/doc/goose
+	doins "${root}/share/doc/goose/copyright"
 }

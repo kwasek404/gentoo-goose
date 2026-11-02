@@ -22,8 +22,10 @@ The ebuild uses `cargo.eclass` (`CRATES` + `GIT_CRATES`); dependencies are fetch
 ## GUI (desktop app)
 
 `IUSE="gui"` (off by default). With `gui`, the ebuild also installs the
-Electron-based desktop app as `/usr/lib/Goose` (launcher `/usr/bin/Goose`,
-menu entry `Goose.desktop`).
+Electron-based desktop app at `/usr/lib/goose` (binary
+`/usr/lib/goose/Goose`, menu entry `goose.desktop`). The `.deb`'s own
+`/usr/bin/goose` symlink is deliberately not installed, so the source-built
+CLI keeps `/usr/bin/goose`.
 
 The app is **not built from source**: it lives in `ui/desktop` (Electron
 Forge + Vite + React), outside the cargo workspace, and needs a node/pnpm
